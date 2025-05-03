@@ -1,6 +1,6 @@
 # alpha_vantage_api.py
 import requests
-from config import API_KEY, BASE_URL
+from alpha_vantage_test.config_av import API_KEY, BASE_URL
 
 def get_intraday(symbol: str, interval: str = "60min", output_size: str = "compact"):
     params = {

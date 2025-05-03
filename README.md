@@ -14,7 +14,7 @@ Das Free-Tier von Alpha Vantage erlaubt 5 API-Aufrufe pro Minute und 500 pro Tag
 ### Installation
 
 ```bash
-pip install alpha-vantage pandas
+pip install yfinance
 pip install psycopg2
 
 
