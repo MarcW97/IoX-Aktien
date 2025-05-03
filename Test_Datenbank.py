@@ -13,6 +13,3 @@ conn = psycopg2.connect(
 print("Verbindung erfolgreich")
 conn.close()
 
-
-
-
