@@ -7,8 +7,7 @@ Ziel ist der Aufbau eines einfachen, erweiterbaren **Aktienanalyse-Tools** in Py
 
 ## 🔗 API
 
-Verwendet wird die kostenlose **[Alpha Vantage API](https://www.alphavantage.co/documentation/)**.  
-Das Free-Tier von Alpha Vantage erlaubt 5 API-Aufrufe pro Minute und 500 pro Tag.
+Verwendet wird die kostenlose **yfinance API**.
 
 
 ### Installation
