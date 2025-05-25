@@ -15,6 +15,8 @@ Verwendet wird die kostenlose **yfinance API**.
 ```bash
 pip install yfinance
 pip install psycopg2
+pip install python-dotenv
+
 
 
 
