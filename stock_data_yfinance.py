@@ -1,6 +1,22 @@
 import yfinance as yf
 import pandas as pd
 
+def get_basic_data(symbol: str):
+    """
+    Gets name, sector, industry from yfinance.
+    """
+    try:
+        info = yf.Ticker(symbol).get_info()
+        return {
+            "name": info.get("longName"),
+            "sector": info.get("sector"),
+            "industry": info.get("industry")
+        }
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Basisdaten: {e}")
+        return {}
+
+
 def get_key_metrics(symbol: str):
     """
     Gets central fundamental data from yfinance.
@@ -29,16 +45,17 @@ def get_key_metrics(symbol: str):
 
 def get_1y_history(symbol: str):
     """
-    Get close event data for last year from yfinance
+    Get daily price data for last year from yfinance
     """
     ticker = yf.Ticker(symbol)
     df = ticker.history(period="1y", interval="1d")  # täglicher Kursverlauf über 1 Jahr
 
     if df.empty:
-        print("Keine Daten gefunden.")
+        print(f"Keine Kursdaten gefunden für {symbol}.")
         return None
 
-    return df[["Close"]]  # oder ["Open", "High", "Low", "Close", "Volume"]
+    # Stelle sicher, dass alle erwarteten Spalten vorhanden sind
+    return df[["Open", "High", "Low", "Close", "Volume"]].copy()
 
 def get_intraday_data_yf(symbol: str, interval: str = "60m", period: str = "1d"):
     """
