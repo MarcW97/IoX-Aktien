@@ -20,3 +20,5 @@ pip install yfinance
 pip install psycopg2-binary
 pip install python-dotenv
 pip install pandas
+pip install streamlit
+pip install plotly
