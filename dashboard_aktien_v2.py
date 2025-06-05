@@ -4,10 +4,11 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 import time
+from dashboard_Inhalte_v2 import show_dashboard
 
 
 # --------------------------
-# 1. DATENBANKVERBINDUNG (eigenes Modul wäre besser)
+# 1. DATENBANKVERBINDUNG
 # --------------------------
 def init_db_connection():
     """Initialisiert und verwaltet die Datenbankverbindung"""
@@ -55,7 +56,6 @@ def setup_ui():
                 st.session_state.db_connection = None
                 st.session_state.show_success_msg = False
                 st.session_state.connection_start_time = None
-                #st.rerun()
 
     # Erfolgsmeldung
     if st.session_state.show_success_msg:
@@ -72,46 +72,57 @@ def setup_ui():
 # 3. DATENABFRAGE
 # --------------------------
 def load_stock_data():
-    """Lädt die Aktiendaten aus der DB"""
+    """Lädt Aktiendaten aus der Datenbank"""
     try:
-        if st.session_state.db_connection:
-            query = "SELECT * FROM stocks;"
-            return pd.read_sql(query, st.session_state.db_connection)
-        return None
+        if not st.session_state.db_connection:
+            return None
+
+        # Tägliche Preisdaten laden - KORREKTE SPALTENNAMEN!
+        price_query = """
+                      SELECT stock_symbol as symbol, date as datum, close as price, volume, open, high, low
+                      FROM prices_daily
+                      WHERE date >= CURRENT_DATE - INTERVAL '1 year'
+                      ORDER BY stock_symbol, date
+                      """
+        price_df = pd.read_sql(price_query, st.session_state.db_connection)
+
+        # Fundamentaldaten laden
+        fundamental_query = """
+                            SELECT stock_symbol       as symbol, \
+                                   market_cap         as marktkapitalisierung,
+                                   enterprise_value   as unternehmenswert, \
+                                   revenue            as umsatz,
+                                   ebitda, \
+                                   pe_ratio           as kgv, \
+                                   dividend_yield     as dividendenrendite,
+                                   dividend_per_share as dividende_je_aktie, \
+                                   beta
+                            FROM fundamentals \
+                            """
+        try:
+            fundamental_df = pd.read_sql(fundamental_query, st.session_state.db_connection)
+
+            # Daten zusammenführen falls beide Datensätze vorhanden
+            if not price_df.empty and not fundamental_df.empty:
+                merged_df = pd.merge(
+                    price_df,
+                    fundamental_df,
+                    on="symbol",
+                    how="left"
+                )
+                return merged_df
+        except Exception as fund_error:
+            print(f"Warnung: Fundamentaldaten konnten nicht geladen werden: {fund_error}")
+            # Wenn Fundamentaldaten fehlen, nur Preisdaten zurückgeben
+            pass
+
+        return price_df if not price_df.empty else None
+
     except Exception as e:
-        st.error(f"❌ Fehler beim Datenabruf: {e}")
+        st.error(f"Fehler beim Laden der Aktiendaten: {e}")
+        print(f"Detaillierter Fehler: {e}")
         return None
 
-
-# --------------------------
-# 4. DASHBOARD INHALTE
-# --------------------------
-def show_dashboard(df):
-    """Zeigt das eigentliche Dashboard an"""
-    st.markdown("---")
-
-    # 1. Filter-Sektion
-    st.subheader("🔍 Aktienfilter")
-    symbols = df["symbol"].unique()
-    selected_symbols = st.multiselect(
-        "Wähle Aktien",
-        symbols,
-        default=list(symbols)
-    )
-
-    # 2. Gefilterte Daten
-    filtered_df = df[df["symbol"].isin(selected_symbols)]
-
-    # 3. Datenanzeige
-    st.subheader("📋 Aktientabelle")
-    st.dataframe(filtered_df)
-
-    # 4. Visualisierungen
-    st.subheader("💹 Aktienpreise")
-    st.bar_chart(filtered_df.set_index("symbol")["price"])
-
-    # Hier können weitere Visualisierungen hinzugefügt werden
-    # z.B. st.line_chart(), st.map() etc.
 
 
 # --------------------------
@@ -125,20 +136,12 @@ if __name__ == "__main__":
     # 2. UI aufbauen
     setup_ui()
 
-    # 3. Nur Dashboard anzeigen wenn verbunden
+    # 3. Daten laden und Dashboard anzeigen
     if st.session_state.db_connection:
-        # Daten laden
         df = load_stock_data()
-
         if df is not None:
-            # Dashboard Inhalte anzeigen
             show_dashboard(df)
+        else:
+            st.warning("Keine Aktiendaten gefunden")
     else:
         st.warning("Bitte mit der Datenbank verbinden")
-
-    # Sidebar-Status
-    with st.sidebar:
-        if st.session_state.db_connection:
-            st.markdown('<p style="font-size:14px; color:green;">🟢 Verbunden</p>', unsafe_allow_html=True)
-        else:
-            st.markdown('<p style="font-size:14px; color:orange;">🔴 Getrennt</p>', unsafe_allow_html=True)
