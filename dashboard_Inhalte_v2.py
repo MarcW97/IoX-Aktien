@@ -212,7 +212,7 @@ def show_fundamental_analysis(df):
             st.metric("KGV", f"{fundamental_df.get('kgv', 'N/A')}")
 
         with col2:
-            dividend_yield = fundamental_df.get('dividendenrendite')
+            dividend_yield = fundamental_df.get('dividendenrendite')/100
             st.metric("Dividendenrendite", f"{dividend_yield:.2f}%" if pd.notnull(dividend_yield) else "N/A")
             st.metric("Beta", f"{fundamental_df.get('beta', 'N/A')}")
 
