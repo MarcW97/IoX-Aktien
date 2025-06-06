@@ -121,6 +121,7 @@ def show_main_dashboard(df):
     # 🔹 UNTERES LAYOUT: Handelsvolumen und Candlestick
     lower_col1, lower_col2 = st.columns(2)
 
+    # Column 1: Handelsvolumen chart
     with lower_col1:
         st.subheader("📦 Handelsvolumen")
         fig_vol = px.bar(
@@ -131,6 +132,7 @@ def show_main_dashboard(df):
             title="Handelsvolumen über Zeit",
             labels={"volume": "Volumen", "datum": "Datum"}
         )
+        fig_vol.update_layout(barmode='group')  # 👈 Important!
         st.plotly_chart(fig_vol, use_container_width=True)
 
     with lower_col2:
