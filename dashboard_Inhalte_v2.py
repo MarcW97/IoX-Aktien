@@ -104,19 +104,42 @@ def show_main_dashboard(df):
 
     with col2:
         st.subheader("📈 Kursverlauf")
-        if 'datum' in df.columns:
-            fig_line = px.line(
-                filtered_df.sort_values(['symbol', 'datum']),
+        if 'datum' in df.columns and len(selected_symbols) == 2:  # Nur wenn 2 Aktien ausgewählt sind
+            # Daten vorbereiten
+            aktie1, aktie2 = selected_symbols[0], selected_symbols[1]
+            df_plot = filtered_df.sort_values(['symbol', 'datum'])
+
+            # Diagramm erstellen
+            fig = px.line(
+                df_plot,
                 x="datum",
                 y="price",
                 color="symbol",
-                title="Historischer Kursverlauf",
-                labels={"price": "Preis ($)", "datum": "Datum"},
-                category_orders={"symbol": sorted(selected_symbols)}
+                title="Kursverlauf mit dualer Y-Achse",
+                labels={"price": "Preis ($)", "datum": "Datum"}
             )
-            st.plotly_chart(fig_line, use_container_width=True)
 
-    st.markdown("---")
+            # Zweite Y-Achse hinzufügen
+            fig.update_layout(
+                yaxis=dict(
+                    title=f"Preis {aktie1} ($)",
+                    side="left",
+                    showgrid=False
+                ),
+                yaxis2=dict(
+                    title=f"Preis {aktie2} ($)",
+                    overlaying="y",
+                    side="right",
+                    showgrid=False
+                )
+            )
+
+            # Zweite Linie an Y2 binden
+            fig.data[1].update(yaxis="y2")  # Index 1 = zweite Aktie
+
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Wähle genau 2 Aktien für die duale Y-Achse aus.")
 
     # 🔹 UNTERES LAYOUT: Handelsvolumen und Candlestick
     lower_col1, lower_col2 = st.columns(2)
