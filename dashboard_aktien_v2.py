@@ -4,7 +4,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 import time
-from dashboard_Inhalte_v2 import show_dashboard
+from dashboard_inhalte_v2 import show_dashboard
 
 
 ##

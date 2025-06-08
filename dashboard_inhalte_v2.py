@@ -47,7 +47,7 @@ def show_dashboard(df):
         show_fundamental_analysis(df)
 
 
-# Ersetze diese Teile in deiner dashboard_Inhalte_v2.py
+# Ersetze diese Teile in deiner dashboard_inhalte_v2.py
 
 def show_main_dashboard(df):
     """Zeigt das Hauptdashboard mit allen Elementen"""
@@ -215,50 +215,76 @@ def show_technical_analysis(df):
 
 
 def show_fundamental_analysis(df):
-    """Zeigt Fundamentaldaten"""
-    st.header("🔍 Fundamentaldaten Analyse")
+    """Vergleicht zwei Aktien anhand von Fundamentaldaten nebeneinander"""
+
+    st.header("📊 Fundamentaldaten Vergleich")
 
     symbols = sorted(df["symbol"].dropna().unique())
-    selected_symbol = st.selectbox(
-        "Aktie auswählen",
-        symbols,
-        key="fundamental_symbol"
-    )
+
+    col_select1, col_select2 = st.columns(2)
+    with col_select1:
+        symbol1 = st.selectbox("Aktie 1 auswählen:", symbols, key="symbol_1")
+    with col_select2:
+        remaining = [s for s in symbols if s != symbol1]
+        symbol2 = st.selectbox("Aktie 2 auswählen:", remaining, key="symbol_2")
 
     try:
-        # Fundamentaldaten für ausgewählte Aktie filtern
-        fundamental_df = df[df['symbol'] == selected_symbol].iloc[0]
+        df1 = df[df['symbol'] == symbol1].iloc[0]
+        df2 = df[df['symbol'] == symbol2].iloc[0]
 
-        # Wichtige Fundamentaldaten
-        col1, col2, col3 = st.columns(3)
+        def fmt(value, typ="raw"):
+            try:
+                if pd.isnull(value):
+                    return "N/A"
+                value = float(value)
+                if typ == "mrd":
+                    return f"{value / 1e9:.2f} Mrd. $"
+                elif typ == "%":
+                    return f"{value:.2f}%"
+                else:
+                    return f"{value:.2f}"
+            except:
+                return "N/A"
 
+        fundamentals = [
+            ("Marktkapitalisierung", "marktkapitalisierung", "mrd"),
+            ("KGV", "kgv", "raw"),
+            ("Dividendenrendite", "dividendenrendite", "%"),
+            ("52-Wochen Hoch", "hoch_52w", "raw"),
+            ("52-Wochen Tief", "tief_52w", "raw"),
+            ("Unternehmenswert (EV)", "unternehmenswert", "mrd"),
+            ("Umsatz (Revenue)", "umsatz", "mrd"),
+            ("EBITDA", "ebitda", "mrd"),
+            ("Free Cash Flow", "free_cash_flow", "mrd"),
+            ("ROE", "roe", "%"),
+            ("EPS", "eps", "raw"),
+            ("Beta", "beta", "raw")
+        ]
+
+        # Gleichmäßige horizontale Abstände durch gleich breite Spalten
+        col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            st.metric("Marktkapitalisierung", f"{fundamental_df.get('marktkapitalisierung', 0) / 1e9:.2f} Mrd. $")
-            st.metric("KGV", f"{fundamental_df.get('kgv', 'N/A')}")
-
+            st.subheader(f"📈 {symbol1}")
         with col2:
-            dividend_yield = fundamental_df.get('dividendenrendite')/100
-            st.metric("Dividendenrendite", f"{dividend_yield:.2f}%" if pd.notnull(dividend_yield) else "N/A")
-            st.metric("Beta", f"{fundamental_df.get('beta', 'N/A')}")
-
+            st.subheader("Kennzahl")
         with col3:
-            st.metric("52-Wochen Hoch", f"{fundamental_df.get('hoch_52w', 'N/A')} $")
-            st.metric("52-Wochen Tief", f"{fundamental_df.get('tief_52w', 'N/A')} $")
+            st.subheader(f"📉 {symbol2}")
 
-        # Detaillierte Fundamentaldaten
-        with st.expander("🔎 Alle Fundamentaldaten anzeigen"):
-            fundamentals = {
-                "Unternehmenswert (EV)": fundamental_df.get('unternehmenswert'),
-                "Umsatz (Revenue)": fundamental_df.get('umsatz'),
-                "EBITDA": fundamental_df.get('ebitda'),
-                "Free Cash Flow": fundamental_df.get('free_cash_flow'),
-                "Eigenkapitalrendite (ROE)": fundamental_df.get('roe'),
-                "Gewinn je Aktie (EPS)": fundamental_df.get('eps')
-            }
+        for label, key, typ in fundamentals:
+            val1 = df1.get(key)
+            val2 = df2.get(key)
 
-            for key, value in fundamentals.items():
-                if pd.notnull(value):
-                    st.write(f"**{key}:** {value:,}" if isinstance(value, (int, float)) else f"**{key}:** {value}")
+            if key == "dividendenrendite":
+                val1 = (val1 or 0) / 100 if pd.notnull(val1) else None
+                val2 = (val2 or 0) / 100 if pd.notnull(val2) else None
+
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col1:
+                st.markdown(f"<div style='font-size: 18px; font-weight: bold'>{fmt(val1, typ)}</div>", unsafe_allow_html=True)
+            with col2:
+                st.markdown(f"<div style='font-size: 18px; font-weight: bold'>{label}</div>", unsafe_allow_html=True)
+            with col3:
+                st.markdown(f"<div style='font-size: 18px; font-weight: bold'>{fmt(val2, typ)}</div>", unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"Fehler beim Laden der Fundamentaldaten: {e}")
+        st.error(f"Fehler beim Vergleich: {e}")
