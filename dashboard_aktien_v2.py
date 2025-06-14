@@ -6,7 +6,6 @@ import os
 import time
 from dashboard_inhalte_v2 import show_dashboard
 
-
 ##
 # --------------------------
 # 1. DATENBANKVERBINDUNG
@@ -47,7 +46,7 @@ def setup_ui():
     st.set_page_config(page_title="📊 Aktien Dashboard", layout="wide")
 
     # Header mit Verbindungsbutton
-    col1, col2 = st.columns([8, 1])
+    col1, col2 = st.columns([4, 1])
     with col1:
         st.title("📈 Aktienanalyse Dashboard")
     with col2:
@@ -123,8 +122,6 @@ def load_stock_data():
         st.error(f"Fehler beim Laden der Aktiendaten: {e}")
         print(f"Detaillierter Fehler: {e}")
         return None
-
-
 
 # --------------------------
 # HAUPTPROGRAMM

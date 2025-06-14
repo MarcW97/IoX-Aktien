@@ -11,6 +11,9 @@ Datenquelle ist die kostenlose **[yfinance](https://pypi.org/project/yfinance/)*
 
 ---
 
+## Dashboard ausführen:
+python -m streamlit run dashboard_Aktien_v2.py
+
 ## ⚙️ Installation
 
 Benötigte Python-Pakete installieren:

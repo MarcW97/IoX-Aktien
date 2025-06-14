@@ -3,6 +3,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+from db.connection import connect
+from db.persistence import clear_old_data, get_symbol_name_mapping
+from pipeline import run_data_pipeline
 
 ###
 # --------------------------
@@ -52,18 +55,64 @@ def show_dashboard(df):
 def show_main_dashboard(df):
     """Zeigt das Hauptdashboard mit allen Elementen"""
     st.markdown("---")
-
-    # 1. Filter-Sektion
     st.subheader("🔍 Aktienfilter")
-    symbols = sorted(df["symbol"].unique())
-    selected_symbols = st.multiselect(
-        "Wähle Aktien",
-        symbols,
-        default=list(symbols[:3]) if len(symbols) > 3 else symbols,
-        key="main_dash_stock_selector"
-    )
+    st.write("Welche Aktien möchtest du analysieren?")
 
-    # 2. Zeitfilter - KORRIGIERT!
+    with st.form("aktien_eingabe_formular"):
+        symbol1 = st.text_input("Aktie 1", value="")
+        symbol2 = st.text_input("Aktie 2", value="")
+        submitted = st.form_submit_button("Analysieren & Speichern")
+
+    if submitted:
+        newSymbols = [symbol1.upper(), symbol2.upper()]
+        newSymbols = [s for s in newSymbols if s]
+
+        with st.spinner("Verarbeite Aktien..."):
+            conn = connect()
+            try:
+                clear_old_data(conn)
+                for symbol in newSymbols:
+                    try:
+                        run_data_pipeline(conn, symbol)
+                        st.success(f"{symbol} erfolgreich analysiert und gespeichert.")
+                    except ValueError as ve:
+                        st.warning(str(ve))
+                    except Exception as e:
+                        st.error(f"Fehler bei {symbol}: {str(e)}")
+            finally:
+                conn.close()
+        st.rerun()
+
+    # Anzeige vorhandener Aktien mit Möglichkeit zum Entfernen
+    if not df.empty:
+        conn = connect()
+        symbol_to_name = get_symbol_name_mapping(conn)
+        conn.close()
+
+        available_symbols = sorted(df["symbol"].unique())
+
+        name_to_symbol = {
+            symbol_to_name.get(s, s): s for s in available_symbols
+        }
+        name_options = list(name_to_symbol.keys())
+
+        selected_names = st.multiselect(
+            label="",
+            options=name_options,
+            default=name_options,
+            key="main_dash_stock_selector",
+            help="Entferne Aktien per 'X' aus der Anzeige"
+        )
+        selected_symbols = [name_to_symbol[name] for name in selected_names]
+
+        if selected_symbols:
+            st.write(f"Angezeigte Aktien: {', '.join(selected_names)}")
+        else:
+            st.info("Keine Aktien ausgewählt.")
+    else:
+        st.info("Noch keine Aktien analysiert.")
+
+    # Zeitfilter
     if 'datum' in df.columns:
         # Datetime-Konvertierung für PostgreSQL date-Felder
         df['datum'] = pd.to_datetime(df['datum'])
@@ -82,7 +131,7 @@ def show_main_dashboard(df):
             key="main_dash_date_selector"
         )
 
-    # 3. Gefilterte Daten
+    # Gefilterte Daten
     filtered_df = df[df["symbol"].isin(selected_symbols)]
     if 'datum' in df.columns and len(date_range) == 2:
         # Datum-Vergleich korrigiert
@@ -92,7 +141,7 @@ def show_main_dashboard(df):
             ]
 
     # Rest des Codes bleibt gleich...
-    # 🔹 OBERES LAYOUT: Tabelle und Kursverlauf
+    # OBERES LAYOUT: Tabelle und Kursverlauf
     col1, col2 = st.columns(2)
 
     with col1:
@@ -141,7 +190,7 @@ def show_main_dashboard(df):
         else:
             st.warning("Wähle genau 2 Aktien für die duale Y-Achse aus.")
 
-    # 🔹 UNTERES LAYOUT: Handelsvolumen und Candlestick
+    # UNTERES LAYOUT: Handelsvolumen und Candlestick
     lower_col1, lower_col2 = st.columns(2)
 
     # Column 1: Handelsvolumen chart

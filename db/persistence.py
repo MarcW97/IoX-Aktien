@@ -71,3 +71,9 @@ def is_valid_symbol(symbol: str) -> bool:
         return bool(info and "longName" in info)
     except Exception:
         return False
+
+def get_symbol_name_mapping(conn):
+    cur = conn.cursor()
+    cur.execute("SELECT symbol, name FROM stocks;")
+    rows = cur.fetchall()
+    return {symbol: name for symbol, name in rows if name}

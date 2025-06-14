@@ -17,7 +17,7 @@ def get_basic_data(symbol: str):
         return {}
 
 
-def get_key_metrics(symbol: str):
+def get_fundamentals(symbol: str):
     """
     Gets central fundamental data from yfinance.
     """
