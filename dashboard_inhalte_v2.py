@@ -55,8 +55,7 @@ def show_dashboard(df):
 def show_main_dashboard(df):
     """Zeigt das Hauptdashboard mit allen Elementen"""
     st.markdown("---")
-    st.subheader("🔍 Aktienfilter")
-    st.write("Welche Aktien möchtest du analysieren?")
+    st.subheader("🔍 Welche Aktien möchtest du analysieren?")
 
     #Symbol-Namen aus Datenbank laden für Dropdown
     conn = connect()
@@ -91,7 +90,7 @@ def show_main_dashboard(df):
             )
 
         with col5:
-            submitted = st.form_submit_button("🚀 Analysieren & Speichern")
+            submitted = st.form_submit_button("Analysieren & Speichern")
 
     # Symbol aus Mapping extrahieren
     symbol1 = symbol_map.get(auswahl1, "").upper()

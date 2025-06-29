@@ -14,6 +14,11 @@ Datenquelle ist die kostenlose **[yfinance](https://pypi.org/project/yfinance/)*
 ## Dashboard ausführen:
 python -m streamlit run dashboard_Aktien_v2.py
 
+## Anreichern von Basis Aktiendaten für die Dropdown Liste:
+Liste von Aktiensymbolen in die Datei ´symbols.csv´ speichern.
+Dann folgendes Skript ausführen:
+python db/import_basic_stocks_from_csv.py
+
 ## ⚙️ Installation
 
 Benötigte Python-Pakete installieren:
