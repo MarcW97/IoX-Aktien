@@ -140,6 +140,7 @@ if __name__ == "__main__":
         if df is not None:
             show_dashboard(df)
         else:
-            st.warning("Keine Aktiendaten gefunden")
+            empty_df = pd.DataFrame(columns=["symbol", "datum", "price", "open", "high", "low", "volume"])
+            show_dashboard(empty_df)
     else:
         st.warning("Bitte mit der Datenbank verbinden")

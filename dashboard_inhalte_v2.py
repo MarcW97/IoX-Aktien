@@ -31,7 +31,7 @@ def show_dashboard(df):
         st.subheader("📌 Hauptmenü")
         selected_page = st.radio(
             "Optionen",
-            ["Dashboard", "Technische Analyse", "Fundamentaldaten"],
+            ["Dashboard", "Technische Analyse", "Fundamentaldaten", "Tabellarische Datenansicht"],
             index=0,
             key="nav_menu"
         )
@@ -46,11 +46,11 @@ def show_dashboard(df):
         show_main_dashboard(df)
     elif selected_page == "Technische Analyse":
         show_technical_analysis(df)
-    else:
+    elif selected_page == "Fundamentaldaten":
         show_fundamental_analysis(df)
+    else:
+        show_tabellarische_datenansicht(df)
 
-
-# Ersetze diese Teile in deiner dashboard_inhalte_v2.py
 
 def show_main_dashboard(df):
     """Zeigt das Hauptdashboard mit allen Elementen"""
@@ -58,20 +58,55 @@ def show_main_dashboard(df):
     st.subheader("🔍 Aktienfilter")
     st.write("Welche Aktien möchtest du analysieren?")
 
+    #Symbol-Namen aus Datenbank laden für Dropdown
+    conn = connect()
+    symbol_to_name = get_symbol_name_mapping(conn)
+    conn.close()
+
+    # Mapping und Optionen aufbauen
+    options = [f"{symbol} – {symbol_to_name[symbol]}" for symbol in sorted(symbol_to_name)]
+    symbol_map = {f"{symbol} – {symbol_to_name[symbol]}": symbol for symbol in symbol_to_name}
+
     with st.form("aktien_eingabe_formular"):
-        symbol1 = st.text_input("Aktie 1", value="")
-        symbol2 = st.text_input("Aktie 2", value="")
-        submitted = st.form_submit_button("Analysieren & Speichern")
+        col1, col2, col3, col4, col5 = st.columns([1, 2, 1, 2, 2])
+
+        with col1:
+            st.markdown("**Aktie 1**")
+        with col2:
+            auswahl1 = st.selectbox(
+                "",
+                options=[""] + options,  # leere Option für optional
+                key="symbol1_select",
+                label_visibility="collapsed"
+            )
+
+        with col3:
+            st.markdown("**Aktie 2**")
+        with col4:
+            auswahl2 = st.selectbox(
+                "",
+                options=[""] + options,
+                key="symbol2_select",
+                label_visibility="collapsed"
+            )
+
+        with col5:
+            submitted = st.form_submit_button("🚀 Analysieren & Speichern")
+
+    # Symbol aus Mapping extrahieren
+    symbol1 = symbol_map.get(auswahl1, "").upper()
+    symbol2 = symbol_map.get(auswahl2, "").upper()
+
 
     if submitted:
-        newSymbols = [symbol1.upper(), symbol2.upper()]
-        newSymbols = [s for s in newSymbols if s]
+        new_symbols = [symbol1.upper(), symbol2.upper()]
+        new_symbols = [s for s in new_symbols if s]
 
         with st.spinner("Verarbeite Aktien..."):
             conn = connect()
             try:
                 clear_old_data(conn)
-                for symbol in newSymbols:
+                for symbol in new_symbols:
                     try:
                         run_data_pipeline(conn, symbol)
                         st.success(f"{symbol} erfolgreich analysiert und gespeichert.")
@@ -83,7 +118,7 @@ def show_main_dashboard(df):
                 conn.close()
         st.rerun()
 
-    # Anzeige vorhandener Aktien mit Möglichkeit zum Entfernen
+    # Anzeige vorhandener Aktien
     if not df.empty:
         conn = connect()
         symbol_to_name = get_symbol_name_mapping(conn)
@@ -91,24 +126,10 @@ def show_main_dashboard(df):
 
         available_symbols = sorted(df["symbol"].unique())
 
-        name_to_symbol = {
-            symbol_to_name.get(s, s): s for s in available_symbols
-        }
-        name_options = list(name_to_symbol.keys())
+        # Namen anzeigen, falls vorhanden – sonst Tickersymbol
+        display_names = [symbol_to_name.get(s, s) for s in available_symbols]
 
-        selected_names = st.multiselect(
-            label="",
-            options=name_options,
-            default=name_options,
-            key="main_dash_stock_selector",
-            help="Entferne Aktien per 'X' aus der Anzeige"
-        )
-        selected_symbols = [name_to_symbol[name] for name in selected_names]
-
-        if selected_symbols:
-            st.write(f"Angezeigte Aktien: {', '.join(selected_names)}")
-        else:
-            st.info("Keine Aktien ausgewählt.")
+        st.markdown(f"**Aktuell analysierte Aktien:** {', '.join(display_names)}")
     else:
         st.info("Noch keine Aktien analysiert.")
 
@@ -132,7 +153,7 @@ def show_main_dashboard(df):
         )
 
     # Gefilterte Daten
-    filtered_df = df[df["symbol"].isin(selected_symbols)]
+    filtered_df = df.copy()
     if 'datum' in df.columns and len(date_range) == 2:
         # Datum-Vergleich korrigiert
         filtered_df = filtered_df[
@@ -140,41 +161,43 @@ def show_main_dashboard(df):
             (filtered_df['datum'].dt.date <= date_range[1])
             ]
 
-    # Rest des Codes bleibt gleich...
-    # OBERES LAYOUT: Tabelle und Kursverlauf
-    col1, col2 = st.columns(2)
+    # OBERES LAYOUT: Kursverlauf
+    st.subheader("📈 Kursverlauf")
+    unique_symbols = sorted(filtered_df["symbol"].unique())
 
-    with col1:
-        st.subheader("📋 Aktientabelle")
-        # Datum für Anzeige formatieren
-        display_df = filtered_df.copy()
-        display_df['datum'] = display_df['datum'].dt.strftime('%Y-%m-%d')
-        st.dataframe(display_df.sort_values(['symbol', 'datum']))
+    if len(unique_symbols) == 0:
+        st.info("Keine Daten vorhanden.")
+    else:
+        aktie1 = unique_symbols[0]
+        aktie2 = unique_symbols[1] if len(unique_symbols) >= 2 else None
 
-    with col2:
-        st.subheader("📈 Kursverlauf")
-        if 'datum' in df.columns and len(selected_symbols) == 2:  # Nur wenn 2 Aktien ausgewählt sind
-            # Daten vorbereiten
-            aktie1, aktie2 = selected_symbols[0], selected_symbols[1]
-            df_plot = filtered_df.sort_values(['symbol', 'datum'])
+        selected_symbols = [aktie1]
+        if aktie2:
+            selected_symbols.append(aktie2)
 
-            # Diagramm erstellen
-            fig = px.line(
-                df_plot,
-                x="datum",
-                y="price",
-                color="symbol",
-                title="Kursverlauf mit dualer Y-Achse",
-                labels={"price": "Preis ($)", "datum": "Datum"}
+        df_plot = filtered_df[filtered_df["symbol"].isin(selected_symbols)].sort_values(['symbol', 'datum'])
+
+        fig = px.line(
+            df_plot,
+            x="datum",
+            y="price",
+            color="symbol",
+            labels={"price": "Preis ($)", "datum": "Datum"},
+        )
+
+        # Layout
+        title = f"Kursverlauf: {aktie1}" + (f" vs. {aktie2}" if aktie2 else "")
+        fig.update_layout(
+            title=title,
+            yaxis=dict(
+                title=f"Preis {aktie1} ($)",
+                side="left",
+                showgrid=False
             )
+        )
 
-            # Zweite Y-Achse hinzufügen
+        if aktie2 and len(fig.data) > 1:
             fig.update_layout(
-                yaxis=dict(
-                    title=f"Preis {aktie1} ($)",
-                    side="left",
-                    showgrid=False
-                ),
                 yaxis2=dict(
                     title=f"Preis {aktie2} ($)",
                     overlaying="y",
@@ -182,13 +205,9 @@ def show_main_dashboard(df):
                     showgrid=False
                 )
             )
+            fig.data[1].update(yaxis="y2")  # zweite Linie auf rechte Achse
 
-            # Zweite Linie an Y2 binden
-            fig.data[1].update(yaxis="y2")  # Index 1 = zweite Aktie
-
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("Wähle genau 2 Aktien für die duale Y-Achse aus.")
+        st.plotly_chart(fig, use_container_width=True)
 
     # UNTERES LAYOUT: Handelsvolumen und Candlestick
     lower_col1, lower_col2 = st.columns(2)
@@ -207,10 +226,16 @@ def show_main_dashboard(df):
         fig_vol.update_layout(barmode='group')  # 👈 Important!
         st.plotly_chart(fig_vol, use_container_width=True)
 
+    # Candlestick: separate Auswahl
     with lower_col2:
         st.subheader("🕯️ Candlestick Chart")
-        if len(selected_symbols) == 1:
-            symbol_df = filtered_df[filtered_df['symbol'] == selected_symbols[0]]
+
+        unique_symbols = sorted(filtered_df["symbol"].unique())
+
+        selected_candle_symbol = st.session_state.get("candle_symbol_select", unique_symbols[0] if unique_symbols else None)
+
+        if selected_candle_symbol:
+            symbol_df = filtered_df[filtered_df['symbol'] == selected_candle_symbol]
             fig = go.Figure(data=[go.Candlestick(
                 x=symbol_df['datum'],
                 open=symbol_df['open'],
@@ -218,10 +243,18 @@ def show_main_dashboard(df):
                 low=symbol_df['low'],
                 close=symbol_df['price']
             )])
-            fig.update_layout(title=f"Candlestick Chart - {selected_symbols[0]}")
+            fig.update_layout(title=f"Candlestick Chart - {selected_candle_symbol}")
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("Wählen Sie genau eine Aktie für Candlestick-Diagramm")
+            st.info("Bitte wähle eine Aktie für den Candlestick-Chart.")
+
+        selected_candle_symbol = st.selectbox(
+            "Aktie für Candlestick auswählen",
+            unique_symbols,
+            index=unique_symbols.index(selected_candle_symbol) if selected_candle_symbol in unique_symbols else 0,
+            key="candle_symbol_select"
+        )
+
 def show_technical_analysis(df):
     """Zeigt technische Analyse-Tools"""
     st.header("📊 Technische Analyse")
@@ -337,3 +370,17 @@ def show_fundamental_analysis(df):
 
     except Exception as e:
         st.error(f"Fehler beim Vergleich: {e}")
+
+def show_tabellarische_datenansicht(df):
+    st.header("📋 Tabellarische Datenansicht")
+
+    if df.empty:
+        st.info("Keine Daten vorhanden.")
+        return
+
+    # Sicherstellen, dass datum als datetime vorliegt
+    display_df = df.copy()
+    display_df['datum'] = pd.to_datetime(display_df['datum'], errors='coerce')
+    display_df['datum'] = display_df['datum'].dt.strftime('%Y-%m-%d')
+
+    st.dataframe(display_df.sort_values(['symbol', 'datum']))
