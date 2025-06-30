@@ -124,10 +124,7 @@ def show_main_dashboard(df):
         conn.close()
 
         available_symbols = sorted(df["symbol"].unique())
-
-        # Namen anzeigen, falls vorhanden – sonst Tickersymbol
         display_names = [symbol_to_name.get(s, s) for s in available_symbols]
-
         st.markdown(f"**Aktuell analysierte Aktien:** {', '.join(display_names)}")
     else:
         st.info("Noch keine Aktien analysiert.")
@@ -141,7 +138,7 @@ def show_main_dashboard(df):
         max_date = df['datum'].max().date()  # .date() statt .to_pydatetime()
 
         # Standardwerte für date_range
-        default_start = max_date - timedelta(days=30)
+        default_start = max_date - timedelta(days=365)
         date_range = st.slider(
             "Zeitraum auswählen",
             min_value=min_date,
@@ -225,7 +222,7 @@ def show_main_dashboard(df):
         fig_vol.update_layout(barmode='group')  # 👈 Important!
         st.plotly_chart(fig_vol, use_container_width=True)
 
-    # Candlestick: separate Auswahl
+    # Column 2: Candlestick Chart mit Auswahl der Aktie
     with lower_col2:
         st.subheader("🕯️ Candlestick Chart")
 
@@ -342,7 +339,6 @@ def show_fundamental_analysis(df):
             ("Beta", "beta", "raw")
         ]
 
-        # Gleichmäßige horizontale Abstände durch gleich breite Spalten
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             st.subheader(f"📈 {symbol1}")
