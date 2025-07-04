@@ -328,14 +328,15 @@ def show_fundamental_analysis(df):
             ("Marktkapitalisierung", "marktkapitalisierung", "mrd"),
             ("KGV", "kgv", "raw"),
             ("Dividendenrendite", "dividendenrendite", "%"),
-            ("52-Wochen Hoch", "hoch_52w", "raw"),
-            ("52-Wochen Tief", "tief_52w", "raw"),
+            ("Dividende je Aktie", "dividende_je_aktie", "raw"),
+            # ("52-Wochen Hoch", "hoch_52w", "raw"),
+            # ("52-Wochen Tief", "tief_52w", "raw"),
             ("Unternehmenswert (EV)", "unternehmenswert", "mrd"),
             ("Umsatz (Revenue)", "umsatz", "mrd"),
             ("EBITDA", "ebitda", "mrd"),
-            ("Free Cash Flow", "free_cash_flow", "mrd"),
-            ("ROE", "roe", "%"),
-            ("EPS", "eps", "raw"),
+            # ("Free Cash Flow", "free_cash_flow", "mrd"),
+            # ("ROE", "roe", "%"),
+            # ("EPS", "eps", "raw"),
             ("Beta", "beta", "raw")
         ]
 

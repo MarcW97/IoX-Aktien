@@ -57,20 +57,3 @@ def get_1y_history(symbol: str):
     # Stelle sicher, dass alle erwarteten Spalten vorhanden sind
     return df[["Open", "High", "Low", "Close", "Volume"]].copy()
 
-def get_intraday_data_yf(symbol: str, interval: str = "60m", period: str = "1d"):
-    """
-    Get Intraday-data for 1 Day from yfinance with interval 60m.
-    """
-    try:
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(interval=interval, period=period)
-
-        if df.empty:
-            raise Exception("Keine Daten empfangen – Symbol oder Zeitraum ungültig?")
-
-        return df[["Open", "Close"]]
-
-    except Exception as e:
-        print(f"Fehler beim Abrufen der Intraday-Daten: {e}")
-        return pd.DataFrame()
-
